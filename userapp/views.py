@@ -3,6 +3,22 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib import messages
 from .forms import CustomUserCreationForm
+import requests
+import json
+
+
+def google_captcha(clientkey):
+    # ------- Google re-CAPTCHA code
+    clientkey = clientkey
+    secretkey = '6LcGnd0cAAAAADjQZAedMqJuQl044TUPxR8MRwbV'
+    captcha_data = {
+        'secret': secretkey,
+        'response': clientkey
+    }
+    site_response = requests.post('https://www.google.com/recaptcha/api/siteverify', data=captcha_data)
+    response = json.loads(site_response.text)
+    verify = response['success']
+    return verify
 
 
 # Create your views here.
@@ -16,17 +32,30 @@ def login_user(request):
                 user = authenticate(username=uname, password=upass)
                 print(user.usertype, '----------------user-type')
                 if user is not None:
-                    login(request, user)
-                    if user.usertype == 1:
-                        print("TYPE 1")
-                        messages.success(request, 'Logged in successfully')
-                        return HttpResponseRedirect(reverse('homepage'))
-                    elif user.usertype == 2:
-                        print("TYPE 2")
-                        messages.success(request, 'Logged in successfully')
-                        return HttpResponseRedirect(reverse('homepage'))
+
+                    # getting captcha response from html page
+                    clientkey = request.POST.get('g-recaptcha-response')
+                    # calling captcha method and sending response to it
+                    verify = google_captcha(clientkey)
+                    print('captcha value: ', verify)
+
+                    if verify:
+                        login(request, user)
+                        if user.usertype == 1:
+                            print("TYPE 1")
+                            messages.success(request, 'Logged in successfully')
+                            return HttpResponseRedirect(reverse('homepage'))
+                        elif user.usertype == 2:
+                            print("TYPE 2")
+                            messages.success(request, 'Logged in successfully')
+                            return HttpResponseRedirect(reverse('homepage'))
+                        else:
+                            print("login failed")
+                            messages.error(request, 'Log-in failed')
+                            return redirect('login_User')
                     else:
                         print("login failed")
+                        messages.error(request, 'Log-in failed, attempt recaptcha')
                         return redirect('login_User')
         else:
             fm = AuthenticationForm()
@@ -93,12 +122,28 @@ def page_not_found(request):
 
 def signup_users(request):
     if request.method == "POST":
-        fm = CustomUserCreationForm(request.POST)
-        if fm.is_valid():
-            fm.save()
-            print("SUCCESS!!")
-            fm = CustomUserCreationForm()
-            return redirect('login_User')
+
+        # getting captcha response from html page
+        clientkey = request.POST.get('g-recaptcha-response')
+        # calling captcha method and sending response to it
+        verify = google_captcha(clientkey)
+        print('captcha value: ', verify)
+
+        if verify:
+            fm = CustomUserCreationForm(request.POST)
+            if fm.is_valid():
+                fm.save()
+                print("SUCCESS!!")
+                fm = CustomUserCreationForm()
+                return redirect('login_User')
+            else:
+                print("Form submission failed")
+                messages.error(request, 'Submission failed')
+                return redirect('create_user')
+        else:
+            print("Form submission failed")
+            messages.error(request, 'Log-in failed, attempt recaptcha')
+            return redirect('create_user')
     else:
         form = CustomUserCreationForm()
         context = {

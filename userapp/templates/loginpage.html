@@ -9,13 +9,29 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 
     <title>LOGIN</title>
+
+<!--   to integrate google re-CAPTCHA-->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
   </head>
   <body>
+  <br>
+    {% if messages %}
+      <div class="container-sm text-center p-3 mb-2 bg-danger text-white">
+            {% for message in messages %}
+            <h5 {% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</h5>
+            {% endfor %}
+      </div>
+    {% endif %}
   <div class="container">
     <h1>LOGIN</h1>
     <form action="" method="POST">
       {% csrf_token %}
       {{ fm.as_p }}
+
+<!--      site key for G-re-CAPTCHA-->
+      <div class="g-recaptcha" data-sitekey="6LcGnd0cAAAAAPZ8CU-z91tJqnDsHhId2FsADBAQ"></div>
+
       <input type="submit" value="SUBMIT" class="btn btn-sm btn-warning">
     </form>
     <a href="{% url 'create_user' %}"> CREATE USER</a>
