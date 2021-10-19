@@ -3,6 +3,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib import messages
 from .forms import CustomUserCreationForm
+from .models import CustomUser
 import requests
 import json
 
@@ -91,6 +92,7 @@ def homepage(request):
 def logout_user(request):
     logout(request)
     print("logged out")
+    messages.success(request, "User Logged OUT")
     return redirect('login_User')
 
 
@@ -130,16 +132,29 @@ def signup_users(request):
         print('captcha value: ', verify)
 
         if verify:
-            fm = CustomUserCreationForm(request.POST)
-            if fm.is_valid():
-                fm.save()
+            email = request.POST.get('email')
+            usertype = request.POST.get('usertype')
+            password1 = request.POST.get('password1')
+            password2 = request.POST.get('password2')
+            print(email, usertype, password1, password2)
+            if password1 == password2:
+                usr_crt = CustomUser.objects.create_user(email=email, usertype=usertype, password=password1)
+                usr_crt.save()
                 print("SUCCESS!!")
-                fm = CustomUserCreationForm()
+                messages.success(request, "User Created")
                 return redirect('login_User')
             else:
-                print("Form submission failed")
-                messages.error(request, 'Submission failed')
+                messages.error(request, "WARNING!!! PASSWORDS SHOULD BE SAME")
                 return redirect('create_user')
+            # fm = CustomUserCreationForm(request.POST)
+            # if fm.is_valid():
+            #     fm.save()
+            #     print("SUCCESS!!")
+            #     return redirect('login_User')
+            # else:
+            #     print("Form submission failed")
+            #     messages.error(request, 'Submission failed')
+            #     return redirect('create_user')
         else:
             print("Form submission failed")
             messages.error(request, 'Log-in failed, attempt recaptcha')
